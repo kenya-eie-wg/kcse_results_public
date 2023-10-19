@@ -1,0 +1,30 @@
+"0","kcse %>% 
+  filter(area == ""dadaab"") %>% 
+  filter(!is.na(school)) %>% 
+  filter(subject %out% c(""maths_b"", 
+                         ""general_science"", 
+                         ""kenyan_sign_language"")) %>% 
+  group_by(year, school, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = ""year_"") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  group_by(school) %>% 
+  nest() %>% 
+  mutate(t_test = map(data, ~ t.test(.x$increase ~ .x$is_stem, paired = FALSE)), 
+         res = map(t_test, broom::tidy)) %>% 
+  unnest(res) %>%  
+  select(school, estimate, statistic, p.value) %>% 
+  mutate_if(is.numeric, ~ round(., digits = 3)) %>% 
+  arrange(estimate) %>% 
+  rename(School = school, 
+         Estimate = estimate, 
+         `T-statistic` = statistic, 
+         `P-value` = p.value) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_caption(""T-test results of score increases in STEM and non-STEM scores by school"") %>% 
+  set_table_properties(width = .6, layout = ""autofit"")
+"
+"2","`summarise()` has grouped output by 'year', 'school', 'subject'. You can override using the `.groups` argument."
+"2","`mutate_if()` ignored the following grouping variables:"

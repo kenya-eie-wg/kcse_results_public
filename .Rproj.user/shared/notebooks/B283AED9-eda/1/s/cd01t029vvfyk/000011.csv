@@ -1,0 +1,16 @@
+"0","dadaab %>% 
+  filter(grade %out% c(""X"", ""Y"", ""U"", ""P"", ""--"")) %>% 
+  group_by(subject, year) %>%
+  summarise(count = n()) %>% 
+  filter(subject %out% c(""biology_for_the_blind"", 
+                         ""maths_b"", 
+                         ""general_science"")) %>% 
+  ggplot(aes(x = year, y = count, fill = subject))  + 
+  geom_col() + 
+  geom_text(aes(year, count, label = comma(count), fill = NULL), 
+            data = dadaab_subtotals, 
+            vjust = -.5) + 
+  scale_y_continuous(labels = comma) + 
+  labs(title = ""Number of papers graded per year per subject in Dadaab"")
+"
+"2","`summarise()` has grouped output by 'subject'. You can override using the `.groups` argument."

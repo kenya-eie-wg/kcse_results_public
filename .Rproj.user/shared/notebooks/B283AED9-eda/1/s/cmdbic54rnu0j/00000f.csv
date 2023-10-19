@@ -1,0 +1,38 @@
+"0","dadaab %>%
+  mutate(is_stem = ifelse(subject %in% c(""biology"", ""chemistry"", ""computer_studies"", 
+                                         ""general_science"", ""maths"", ""physics""), 
+                          TRUE, FALSE)) %>% 
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  filter(subject %out% c(""biology_for_the_blind"", 
+                         ""maths_b"", 
+                         ""general_science"", 
+                         ""kenyan_sign_language"")) %>% 
+  group_by(subject, is_stem) %>% 
+  mutate(yoy_change = score - lag(score), 
+         pc_change = yoy_change / score, 
+         overall_change = score[year == 2022] - score[year == 2018],
+         pc_overall_change = overall_change / score[year == 2018]) %>% 
+  filter(!is.na(yoy_change)) %>% 
+  summarise(yoy_change = mean(yoy_change), 
+            pc_change = mean(pc_change), 
+            overall_change = mean(overall_change), 
+            pc_overall_change = mean(pc_overall_change)) %>%
+  mutate(subject = str_replace_all(subject, ""_"", "" "")) %>% 
+  ggplot(aes(x = pc_overall_change, 
+             y = fct_reorder(str_to_title(subject), pc_overall_change), 
+             fill = is_stem)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(pc_overall_change, accuracy = 1)), 
+            hjust = ""inward"") + 
+  scale_x_continuous(labels = percent) + 
+  scale_fill_manual(values = c(""darkgoldenrod3"", ""darkslategray4""), 
+                      breaks = c(TRUE, FALSE)) +
+  labs(x = ""% change between 2018 and 2022"", 
+       y = """", 
+       title = ""% change in mean subject scores between 2018 and 2022"", 
+       subtitle = ""In Dadaab"", 
+       fill = ""STEM"")
+"
+"2","`summarise()` has grouped output by 'subject', 'year'. You can override using the `.groups` argument."
+"2","`summarise()` has grouped output by 'subject'. You can override using the `.groups` argument."

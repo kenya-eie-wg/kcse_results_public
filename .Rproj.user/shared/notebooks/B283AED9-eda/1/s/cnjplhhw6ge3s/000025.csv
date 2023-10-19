@@ -1,0 +1,14 @@
+"0","kcse %>% 
+  filter(area == ""dadaab"" & !is.na(sex) & is_stem == ""STEM"" & year != 2019) %>%
+  group_by(year, sex) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = sex, values_from = mean_stem_score) %>% 
+  rename(Year = year) %>% 
+  mutate(Year = factor(Year)) %>% 
+  mutate_at(vars(""Female"", ""Male""), ~ round(., digits = 3)) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_table_properties(layout = ""autofit"", width = .4) %>% 
+  set_caption(""Mean STEM scores in Dadaab"")
+"
+"2","`summarise()` has grouped output by 'year'. You can override using the `.groups` argument."

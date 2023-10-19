@@ -1,0 +1,33 @@
+"0","dadaab %>% 
+  mutate(is_stem = ifelse(subject %in% c(""biology"", ""chemistry"", ""computer_studies"", 
+                                         ""general_science"", ""maths"", ""physics""), 
+                          TRUE, FALSE)) %>% 
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  mutate(score_round = round(score)) %>% 
+  left_join(score_convert, 
+            by = c(""score_round"" = ""score"")) %>% 
+  filter(subject %out% c(""maths_b"", 
+                         ""general_science"", 
+                         ""kenyan_sign_language"")) %>% 
+  mutate(label = subject, 
+         label = ifelse(year != 2021, """", subject), 
+         subject = str_to_title(subject)) %>% 
+  ggplot(aes(x = year, y = score, colour = is_stem)) + 
+  geom_text_repel(aes(label = grade), size = 3, show.legend = FALSE) + 
+  geom_line(size = 1) +
+  facet_wrap(~ subject) +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10)) + 
+  scale_colour_manual(values = c(""darkgoldenrod3"", ""darkslategray4""), 
+                      breaks = c(TRUE, FALSE)) +
+  labs(title = ""Average score per subject 2018-2022"", 
+       subtitle = ""In Dadaab"", 
+       x = """", y = ""Average score"", 
+       colour = ""STEM subject"") + 
+  theme(legend.position = ""bottom"", 
+        strip.background = element_rect(fill = ""black""), 
+        strip.text = element_text(face = ""bold"", size = 8), 
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), 
+        legend.box.margin = unit(c(-5, 0, 0, 0), ""mm"")) 
+"
+"2","`summarise()` has grouped output by 'subject', 'year'. You can override using the `.groups` argument."

@@ -1,0 +1,188 @@
+school,sex,grade,count
+Morneu Sheppell Secondary,Female,A,0
+Morneu Sheppell Secondary,Female,A-,0
+Morneu Sheppell Secondary,Female,B+,0
+Morneu Sheppell Secondary,Female,B,1
+Morneu Sheppell Secondary,Female,B-,5
+Morneu Sheppell Secondary,Female,C+,4
+Morneu Sheppell Secondary,Female,C,5
+Morneu Sheppell Secondary,Female,C-,14
+Morneu Sheppell Secondary,Female,D+,16
+Morneu Sheppell Secondary,Female,D,18
+Morneu Sheppell Secondary,Female,D-,9
+Morneu Sheppell Secondary,Female,E,1
+Morneu Sheppell Secondary,Female,X,1
+Morneu Sheppell Secondary,Female,W,0
+Morneu Sheppell Secondary,Female,Y,0
+Morneu Sheppell Secondary,Female,P,0
+Morneu Sheppell Secondary,Female,U,0
+Vision Secondary,Male,A,0
+Vision Secondary,Male,A-,1
+Vision Secondary,Male,B+,0
+Vision Secondary,Male,B,1
+Vision Secondary,Male,B-,1
+Vision Secondary,Male,C+,3
+Vision Secondary,Male,C,1
+Vision Secondary,Male,C-,13
+Vision Secondary,Male,D+,38
+Vision Secondary,Male,D,78
+Vision Secondary,Male,D-,184
+Vision Secondary,Male,E,67
+Vision Secondary,Male,X,5
+Vision Secondary,Male,W,0
+Vision Secondary,Male,Y,0
+Vision Secondary,Male,P,0
+Vision Secondary,Male,U,3
+Vision Secondary,Female,A,0
+Vision Secondary,Female,A-,0
+Vision Secondary,Female,B+,0
+Vision Secondary,Female,B,0
+Vision Secondary,Female,B-,0
+Vision Secondary,Female,C+,0
+Vision Secondary,Female,C,1
+Vision Secondary,Female,C-,0
+Vision Secondary,Female,D+,1
+Vision Secondary,Female,D,3
+Vision Secondary,Female,D-,16
+Vision Secondary,Female,E,13
+Vision Secondary,Female,X,0
+Vision Secondary,Female,W,0
+Vision Secondary,Female,Y,0
+Vision Secondary,Female,P,0
+Vision Secondary,Female,U,0
+Kakuma Refugee Secondary,Male,A,0
+Kakuma Refugee Secondary,Male,A-,0
+Kakuma Refugee Secondary,Male,B+,1
+Kakuma Refugee Secondary,Male,B,1
+Kakuma Refugee Secondary,Male,B-,1
+Kakuma Refugee Secondary,Male,C+,3
+Kakuma Refugee Secondary,Male,C,6
+Kakuma Refugee Secondary,Male,C-,13
+Kakuma Refugee Secondary,Male,D+,28
+Kakuma Refugee Secondary,Male,D,56
+Kakuma Refugee Secondary,Male,D-,194
+Kakuma Refugee Secondary,Male,E,84
+Kakuma Refugee Secondary,Male,X,7
+Kakuma Refugee Secondary,Male,W,0
+Kakuma Refugee Secondary,Male,Y,0
+Kakuma Refugee Secondary,Male,P,0
+Kakuma Refugee Secondary,Male,U,1
+Kakuma Refugee Secondary,Female,A,0
+Kakuma Refugee Secondary,Female,A-,0
+Kakuma Refugee Secondary,Female,B+,0
+Kakuma Refugee Secondary,Female,B,0
+Kakuma Refugee Secondary,Female,B-,0
+Kakuma Refugee Secondary,Female,C+,0
+Kakuma Refugee Secondary,Female,C,0
+Kakuma Refugee Secondary,Female,C-,0
+Kakuma Refugee Secondary,Female,D+,3
+Kakuma Refugee Secondary,Female,D,8
+Kakuma Refugee Secondary,Female,D-,76
+Kakuma Refugee Secondary,Female,E,41
+Kakuma Refugee Secondary,Female,X,2
+Kakuma Refugee Secondary,Female,W,0
+Kakuma Refugee Secondary,Female,Y,0
+Kakuma Refugee Secondary,Female,P,0
+Kakuma Refugee Secondary,Female,U,1
+Green Light Secondary,Male,A,0
+Green Light Secondary,Male,A-,0
+Green Light Secondary,Male,B+,0
+Green Light Secondary,Male,B,1
+Green Light Secondary,Male,B-,2
+Green Light Secondary,Male,C+,3
+Green Light Secondary,Male,C,4
+Green Light Secondary,Male,C-,12
+Green Light Secondary,Male,D+,17
+Green Light Secondary,Male,D,30
+Green Light Secondary,Male,D-,102
+Green Light Secondary,Male,E,103
+Green Light Secondary,Male,X,5
+Green Light Secondary,Male,W,0
+Green Light Secondary,Male,Y,1
+Green Light Secondary,Male,P,1
+Green Light Secondary,Male,U,2
+Green Light Secondary,Female,A,0
+Green Light Secondary,Female,A-,0
+Green Light Secondary,Female,B+,0
+Green Light Secondary,Female,B,0
+Green Light Secondary,Female,B-,0
+Green Light Secondary,Female,C+,1
+Green Light Secondary,Female,C,0
+Green Light Secondary,Female,C-,1
+Green Light Secondary,Female,D+,4
+Green Light Secondary,Female,D,9
+Green Light Secondary,Female,D-,23
+Green Light Secondary,Female,E,58
+Green Light Secondary,Female,X,2
+Green Light Secondary,Female,W,0
+Green Light Secondary,Female,Y,0
+Green Light Secondary,Female,P,0
+Green Light Secondary,Female,U,1
+Somali Bantu Secondary,Male,A,0
+Somali Bantu Secondary,Male,A-,0
+Somali Bantu Secondary,Male,B+,0
+Somali Bantu Secondary,Male,B,2
+Somali Bantu Secondary,Male,B-,3
+Somali Bantu Secondary,Male,C+,3
+Somali Bantu Secondary,Male,C,9
+Somali Bantu Secondary,Male,C-,9
+Somali Bantu Secondary,Male,D+,30
+Somali Bantu Secondary,Male,D,53
+Somali Bantu Secondary,Male,D-,150
+Somali Bantu Secondary,Male,E,176
+Somali Bantu Secondary,Male,X,19
+Somali Bantu Secondary,Male,W,0
+Somali Bantu Secondary,Male,Y,2
+Somali Bantu Secondary,Male,P,0
+Somali Bantu Secondary,Male,U,0
+Somali Bantu Secondary,Female,A,0
+Somali Bantu Secondary,Female,A-,0
+Somali Bantu Secondary,Female,B+,0
+Somali Bantu Secondary,Female,B,0
+Somali Bantu Secondary,Female,B-,0
+Somali Bantu Secondary,Female,C+,0
+Somali Bantu Secondary,Female,C,0
+Somali Bantu Secondary,Female,C-,1
+Somali Bantu Secondary,Female,D+,2
+Somali Bantu Secondary,Female,D,8
+Somali Bantu Secondary,Female,D-,45
+Somali Bantu Secondary,Female,E,47
+Somali Bantu Secondary,Female,X,3
+Somali Bantu Secondary,Female,W,0
+Somali Bantu Secondary,Female,Y,1
+Somali Bantu Secondary,Female,P,0
+Somali Bantu Secondary,Female,U,0
+Kalobeyei Settlement Secondary,Male,A,0
+Kalobeyei Settlement Secondary,Male,A-,0
+Kalobeyei Settlement Secondary,Male,B+,0
+Kalobeyei Settlement Secondary,Male,B,0
+Kalobeyei Settlement Secondary,Male,B-,0
+Kalobeyei Settlement Secondary,Male,C+,0
+Kalobeyei Settlement Secondary,Male,C,0
+Kalobeyei Settlement Secondary,Male,C-,2
+Kalobeyei Settlement Secondary,Male,D+,0
+Kalobeyei Settlement Secondary,Male,D,8
+Kalobeyei Settlement Secondary,Male,D-,21
+Kalobeyei Settlement Secondary,Male,E,14
+Kalobeyei Settlement Secondary,Male,X,0
+Kalobeyei Settlement Secondary,Male,W,0
+Kalobeyei Settlement Secondary,Male,Y,0
+Kalobeyei Settlement Secondary,Male,P,0
+Kalobeyei Settlement Secondary,Male,U,0
+Kalobeyei Settlement Secondary,Female,A,0
+Kalobeyei Settlement Secondary,Female,A-,0
+Kalobeyei Settlement Secondary,Female,B+,0
+Kalobeyei Settlement Secondary,Female,B,0
+Kalobeyei Settlement Secondary,Female,B-,0
+Kalobeyei Settlement Secondary,Female,C+,0
+Kalobeyei Settlement Secondary,Female,C,0
+Kalobeyei Settlement Secondary,Female,C-,0
+Kalobeyei Settlement Secondary,Female,D+,1
+Kalobeyei Settlement Secondary,Female,D,NA
+Kalobeyei Settlement Secondary,Female,D-,9
+Kalobeyei Settlement Secondary,Female,E,3
+Kalobeyei Settlement Secondary,Female,X,NA
+Kalobeyei Settlement Secondary,Female,W,NA
+Kalobeyei Settlement Secondary,Female,Y,NA
+Kalobeyei Settlement Secondary,Female,P,NA
+Kalobeyei Settlement Secondary,Female,U,NA

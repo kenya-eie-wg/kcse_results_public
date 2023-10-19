@@ -1,0 +1,4 @@
+"0","kk_2019_raw %>% read_csv(""./data/kk_2019_raw.csv"")
+"
+"2","Error in standardise_path(file) : object 'kk_2019_raw' not found
+"

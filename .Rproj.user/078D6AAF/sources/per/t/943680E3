@@ -1,0 +1,28 @@
+{
+    "id": "943680E3",
+    "path": "~/R/kcse_results_public/cleaning_script.Rmd",
+    "project_path": "cleaning_script.Rmd",
+    "type": "r_markdown",
+    "hash": "2461448462",
+    "contents": "",
+    "dirty": false,
+    "created": 1697109023738.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "75,0",
+        "scrollLine": "0",
+        "last_setup_crc32": ""
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1697533472,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1697533472665,
+    "read_only": false,
+    "read_only_alternatives": []
+}

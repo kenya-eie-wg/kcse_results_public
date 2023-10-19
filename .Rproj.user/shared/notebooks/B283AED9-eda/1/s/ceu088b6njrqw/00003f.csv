@@ -1,0 +1,25 @@
+"0","kcse %>% 
+  filter(area == ""dadaab"" & !is.na(school) & school != ""NASIB"") %>%
+  filter(subject %out% c(""maths_b"", 
+                         ""general_science"", 
+                         ""kenyan_sign_language"")) %>% 
+  group_by(year, school, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = score, colour = is_stem)) + 
+  geom_point(size = 1) + 
+  geom_line(size = 1) + 
+  geom_text_repel(aes(label = round(score, digits = 2)), 
+                  size = 2.5) +
+  scale_colour_manual(values = c(""darkgoldenrod3"", ""darkslategray4""), 
+                      breaks = c(""STEM"", ""non-STEM"")) +
+  facet_wrap(~ school) + 
+  theme(legend.position = ""none"", 
+        strip.background = element_rect(fill = ""black""), 
+        strip.text = element_text(face = ""bold"")) + 
+  labs(title = ""STEM and non-STEM scores over time in Dadaab, 2018-2022"", 
+       x = """", 
+       y = ""Mean score"") + 
+  theme(axis.text.x = element_text(angle = 60, 
+                                   vjust = .5))
+"
+"2","`summarise()` has grouped output by 'year', 'school'. You can override using the `.groups` argument."

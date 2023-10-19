@@ -1,0 +1,31 @@
+"0","kcse %>% 
+  filter(area == ""dadaab"") %>% 
+  filter(!is.na(class)) %>% 
+  filter(subject %out% c(""maths_b"", 
+                         ""general_science"", 
+                         ""kenyan_sign_language"")) %>% 
+  group_by(year, school, sex, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = ""year_"") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  ggplot(aes(x =  is_stem, y = increase, colour = is_stem)) + 
+  geom_boxplot(size = .7) +
+  geom_point(size = 2, alpha = .3) +
+  scale_colour_manual(values = c(""darkgoldenrod3"", ""darkslategray4""), 
+                      breaks = c(""STEM"", ""non-STEM"")) +
+  facet_wrap(~ school) + 
+  scale_y_continuous(labels = percent) +
+  labs(x = """", 
+       y = ""Increase in scores"", 
+       title = ""Change in scores by school, 2018 - 2022"") + 
+  coord_cartesian(ylim = c(-1, 6)) + 
+  theme(legend.position = ""none"", 
+        strip.background = element_rect(fill = ""black""), 
+        strip.text = element_text(face = ""bold""))
+"
+"2","Warning: [38;5;238mThere was 1 warning in `filter()`.[39m
+[38;5;238m[36mi[38;5;238m In argument: `!is.na(class)`.[39m
+Caused by warning in `is.na()`:
+[33m![39m is.na() applied to non-(list or vector) of type 'builtin'"
+"2","`summarise()` has grouped output by 'year', 'school', 'sex', 'subject'. You can override using the `.groups` argument."

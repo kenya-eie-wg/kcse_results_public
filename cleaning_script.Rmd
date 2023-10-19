@@ -1,0 +1,78 @@
+---
+title: "cleaning_script"
+output: html_document
+date: '2023-10-12'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(readxl) 
+library(janitor)
+library(viridis)
+library(scales)
+library(ggrepel)
+library(plotly)
+library(flextable)
+
+
+theme_set(theme_light())
+
+# Hopefully this allows the DT to show up
+options(htmltools.preserve.raw = FALSE)
+
+# disabling scientific notation
+options(scipen = 100)
+
+`%out%` <- Negate(`%in%`)
+
+# function for transposing df
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  t_df <- t_df %>%
+    tibble::rownames_to_column(.data = .) %>%
+    tibble::as_tibble(.)
+  return(t_df)
+}
+
+# scaling functions 
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range_wna <- function(x){(x-min(x, na.rm = TRUE))/(max(x, na.rm = TRUE)-min(x, na.rm = TRUE))}
+
+#mode function 
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+not_all_na <- function(x) any(!is.na(x))
+not_any_na <- function(x) all(!is.na(x))
+
+
+score_convert<- tribble(~grade, ~score, 
+        "A", 12, 
+        "A-", 11, 
+        "B+", 10,
+        "B", 9,
+        "B-", 8,
+        "C+", 7,
+        "C", 6,
+        "C-", 5,
+        "D+", 4,
+        "D", 3,
+        "D-", 2,
+        "E", 1,
+        "X", 0,
+        "U", 0, 
+        "Y", 0, 
+        "P", 0, 
+        "W", 0)
+
+```
+
+
+
+

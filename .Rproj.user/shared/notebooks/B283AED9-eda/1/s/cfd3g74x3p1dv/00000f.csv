@@ -1,0 +1,16 @@
+"0","kcse %>% filter(area == ""dadaab"" & !is.na(sex)) %>% 
+  filter(agp > 0) %>% 
+  group_by(year, sex) %>% 
+  summarise(mean_agp = mean(agp, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_agp, colour = sex)) + 
+  geom_line(size = 1) + 
+  geom_text(aes(label = round(mean_agp, digits = 2)), 
+            vjust = -.3, hjust = ""inward"") + 
+  scale_colour_manual(values = c(""#1fa187"", ""#440154"")) +
+  facet_wrap(~ sex) + 
+  labs(title = ""Improvements in mean AGP across both sexes in Dadaab"") +
+  theme(legend.position = ""none"", 
+        strip.background = element_rect(fill = ""black""), 
+        strip.text = element_text(face = ""bold"", size = 8))
+"
+"2","`summarise()` has grouped output by 'year'. You can override using the `.groups` argument."

@@ -1,0 +1,23 @@
+"0","dadaab %>% 
+  group_by(subject_group, subject) %>% 
+  summarise(count = n()) %>% 
+  ungroup() %>% 
+  mutate(pc = round(count / sum(count) * 100, digits = 2)) %>% 
+  mutate(subject = ifelse(pc < 0.5, ""other"", subject), 
+         subject_group = ifelse(subject == ""other"", 
+                                NA_character_, 
+                                subject_group)) %>% 
+  group_by(subject_group, subject) %>% 
+  summarise(count = sum(count), 
+            pc = sum(pc)) %>% 
+  arrange(desc(pc)) %>% 
+  rename(`%_total` = pc) %>%
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_caption(""Number of papers graded from Dadaab, 2018-2022"") %>% 
+  footnote(i = 12, j = 2, ref_symbols = ""1"", 
+           as_paragraph(""Includes Maths B, General Science, Biology for the Blind and Kenyan Sign Language"")) %>% 
+  fontsize(size = 8, part = ""footer"")
+"
+"2","`summarise()` has grouped output by 'subject_group'. You can override using the `.groups` argument."
+"2","`summarise()` has grouped output by 'subject_group'. You can override using the `.groups` argument."

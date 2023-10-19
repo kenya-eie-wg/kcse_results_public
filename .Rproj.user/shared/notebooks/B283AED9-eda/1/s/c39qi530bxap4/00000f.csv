@@ -1,0 +1,14 @@
+"0","kcse %>% filter(area == ""dadaab"" & !is.na(sex)) %>% 
+  group_by(year, sex) %>% 
+  summarise(mean_score = mean(mean_score, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_score, fill = sex)) +
+  geom_col(position = position_dodge()) + 
+  geom_text(aes(label = round(mean_score, digits = 2)), 
+            position = position_dodge(width = .9), 
+            vjust = -.3) + 
+  scale_fill_manual(values = c(""#1fa187"", ""#440154"")) + 
+  labs(title = ""Mean score by sex and year"", 
+       y = ""Number of children"", 
+       x = """")
+"
+"2","`summarise()` has grouped output by 'year'. You can override using the `.groups` argument."
