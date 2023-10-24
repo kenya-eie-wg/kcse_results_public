@@ -1,28 +1,28 @@
 {
-    "id": "943680E3",
-    "path": "~/R/kcse_results_public/cleaning_script.Rmd",
-    "project_path": "cleaning_script.Rmd",
+    "id": "678F2E7A",
+    "path": "~/R/kcse_results_public/report.Rmd",
+    "project_path": "report.Rmd",
     "type": "r_markdown",
-    "hash": "2461448462",
+    "hash": "3110238475",
     "contents": "",
     "dirty": false,
-    "created": 1697109023738.0,
+    "created": 1697710262472.0,
     "source_on_save": false,
     "relative_order": 2,
     "properties": {
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "75,0",
-        "scrollLine": "0",
-        "last_setup_crc32": ""
+        "cursorPosition": "412,0",
+        "scrollLine": "412",
+        "last_setup_crc32": "5789f40f7f6e88a4"
     },
     "folds": "",
-    "lastKnownWriteTime": 1697533472,
+    "lastKnownWriteTime": 1698136443,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1697533472665,
+    "last_content_update": 1698136443113,
     "read_only": false,
     "read_only_alternatives": []
 }

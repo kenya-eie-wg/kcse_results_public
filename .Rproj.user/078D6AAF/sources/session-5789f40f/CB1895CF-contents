@@ -513,6 +513,10 @@ kcse %>%
 
 And this plot presents a more detailed view of the increases. 
 
+> Score distribution geom_density per school. 
+
+This plot shows the density, so that the distributions of the scores of male and female candidates can be more easily compared, even though there were many more male candidates than female ones. 
+
 <br>
 
 
