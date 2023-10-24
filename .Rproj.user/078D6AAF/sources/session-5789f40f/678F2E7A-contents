@@ -366,7 +366,7 @@ kcse %>% filter(area == "dadaab" & !is.na(sex)) %>%
   scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
   facet_wrap(~ sex) + 
   labs(title = "Improvements in mean AGP across both sexes in Dadaab", 
-       colour = "Mean AGP") +
+       y = "Mean AGP") +
   theme(legend.position = "none", 
         strip.background = element_rect(fill = "black"), 
         strip.text = element_text(face = "bold", size = 8))
@@ -898,7 +898,8 @@ kcse %>% filter(area != "dadaab" & !is.na(sex)) %>%
   scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
   facet_wrap(~ sex) + 
   labs(title = "Improvements in mean AGP across both sexes in Kakuma and Kalobeyei", 
-       colour = "") +
+       colour = "", 
+       y = "Mean AGP") +
   theme(strip.background = element_rect(fill = "black"), 
         strip.text = element_text(face = "bold", size = 8))
 ```
