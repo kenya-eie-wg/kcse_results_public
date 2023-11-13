@@ -667,7 +667,7 @@ dadaab_flat %>%
 <br>
 
 
-However, upon performing a t-test, we note that the p-value of **`r dadaab_t_test %>% pull(p.value) %>% round(digits = 3)`** when comparing the change in scores between STEM and non-STEM subjects between 2018 and 2022. This falls outside of the commonly-used threshold of <=0.05 used for statistical significance. The p.value tells us how likely a set of observations could have occurred by chance. 
+However, upon performing a t-test, we note that the p-value of **`r dadaab_t_test %>% pull(p.value) %>% round(digits = 3)`** when comparing the change in scores between STEM and non-STEM subjects between 2018 and 2022. This falls outside of the commonly-used threshold of <=0.05 used for statistical significance. The p-value tells us how likely a set of observations could have occurred by chance. 
 
 The t-statistic, which tells us the size of the effect, is not large at **`r dadaab_t_test %>% pull(statistic) %>% round(digits = 3)`**. This doesn't necessarily rule out UNICEF-supported programmes having an effect on STEM scores. Let us first take a look at the increases in STEM and non-STEM scores at the school level before jumping to conclusions. 
 
@@ -754,7 +754,7 @@ kcse %>%
 
 <br>
 
-Neither the results at the area-level (Dadaab) or the school level are statistically significant. This does not necessarily rule out UNICEF-supported programmes having an effect on STEM scores -- the number of schools is fairly small, and one observation here is the change in mean score per subject per school.  
+Neither the results at the area-level (Dadaab) or the school level are statistically significant. This does not necessarily rule out UNICEF-supported programmes having an effect on STEM scores -- the number of schools is fairly small, and one observation here is the mean score per subject per school.  
 
 Potentially, there could be a Dadaab-wide effect, that affects a some teachers and some students across each of the schools. Ultimately, what is needed is needed is to track students' performance year-on-year. That level of granularity would likely yield less ambiguous results. 
 
@@ -1150,7 +1150,7 @@ Upon performing a t-test, we note that the p-value of **`r kk_t_test %>% pull(p.
 
 The t-statistic, which tells us the size of the effect, is very small at **`r kk_t_test %>% pull(statistic) %>% round(digits = 3)`**. 
 
-We may conclude that, in Kakuma and Kalobeyei, UNICEF-supported interventions have no led to STEM scores increasing more than non-STEM ones. 
+We may conclude that, in Kakuma and Kalobeyei, UNICEF-supported interventions have not led to STEM scores increasing more than non-STEM ones. 
 
 Furthermore, due to the data that was available for Kakuma and Kalobeyei, school-level analysis was not possible: 2018 data was missing the schools each candidate attended (in addition the area, not even allowing an analysis between Kakuma and Kalobeyei) and 2019 data was missing the individual results of candidates, meaning certain analyses, especially those related to the sex of the candidates was not possible. 
 
