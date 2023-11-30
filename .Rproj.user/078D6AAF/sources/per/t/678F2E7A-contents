@@ -1,0 +1,1157 @@
+---
+title: "Exploratory Data Analysis of KCSE Results in Dadaab, Kakuma and Kalobeyei"
+date:  "19 October 2023"
+output:
+  html_document:
+    code_download: yes
+    theme: readable
+    toc: yes
+    toc_depth: 4
+    toc_float: yes
+    number_sections: no
+    collapsed: no
+always_allow_html: yes
+---
+
+```{css, echo=FALSE}
+
+#TOC::before {
+  content: "";
+  display: block;
+  height: 50px;
+  margin: 2em 20px 40px 20px;
+  background-image: url("https://github.com/kenya-eie-wg/kcse_results_public/raw/main/1200px-UNICEF_Logo.png");
+  background-size: contain;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+```
+
+```{=html}
+<style>
+    body .main-container {
+        max-width: 1280px;
+    }
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 8)
+library(tidyverse)
+library(readxl) 
+library(janitor)
+library(viridis)
+library(scales)
+library(ggrepel)
+library(plotly)
+library(flextable)
+
+
+theme_set(theme_light())
+
+# Hopefully this allows the DT to show up
+options(htmltools.preserve.raw = FALSE)
+
+# disabling scientific notation
+options(scipen = 100)
+
+`%out%` <- Negate(`%in%`)
+
+# function for transposing df
+transpose_df <- function(df) {
+  t_df <- data.table::transpose(df)
+  colnames(t_df) <- rownames(df)
+  rownames(t_df) <- colnames(df)
+  t_df <- t_df %>%
+    tibble::rownames_to_column(.data = .) %>%
+    tibble::as_tibble(.)
+  return(t_df)
+}
+
+# scaling functions 
+range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range_wna <- function(x){(x-min(x, na.rm = TRUE))/(max(x, na.rm = TRUE)-min(x, na.rm = TRUE))}
+
+#mode function 
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+not_all_na <- function(x) any(!is.na(x))
+not_any_na <- function(x) all(!is.na(x))
+
+
+
+```
+
+```{r message = FALSE, warning=FALSE}
+locations <- read_xlsx("./data/ken_adminboundaries_tabulardata.xlsx", 
+                      sheet = "ADM1") %>% 
+  clean_names()
+
+pcode1_shape <- 
+  sf::st_read("./data/ken_adm_iebc_20191031_shp/ken_admbnda_adm1_iebc_20191031.shp", 
+          quiet = TRUE) %>% 
+  clean_names()
+
+counties <- read_csv("./data/counties.csv") %>% 
+  mutate(sex_modifier = fct_relevel(sex_modifier, c("male", "female", "total")), 
+         county = recode(county, "national" = "National"))
+
+kcse <- read_csv("./data/kcse.csv") %>% 
+  mutate(no_mg = ifelse(mg %in% c("P", "U", "X", "Y"), 
+                        TRUE, FALSE), 
+         subject = ifelse(subject == "biology_for_the_blind", "biology", subject),
+         area = recode(area, 
+                       "kk" = "kakuma")) %>% 
+  mutate(is_stem = ifelse(subject %in% c("biology", "chemistry", "computer_studies", 
+                                         "general_science", "maths", "physics"), 
+                          "STEM", "non-STEM"), 
+         sex = ifelse(sex == "D-", NA_character_, sex))
+
+kk_2019_raw <- read_csv("./data/kk_2019_raw.csv")
+
+kk_2019_number_candidates <- read_csv("./data/kk_2019_number_candidates.csv")
+
+score_convert<- tribble(~grade, ~score, 
+        "A", 12, 
+        "A-", 11, 
+        "B+", 10,
+        "B", 9,
+        "B-", 8,
+        "C+", 7,
+        "C", 6,
+        "C-", 5,
+        "D+", 4,
+        "D", 3,
+        "D-", 2,
+        "E", 1,
+        "X", 0,
+        "U", 0, 
+        "Y", 0, 
+        "P", 0, 
+        "W", 0)
+```
+
+# Summary 
+
+<br>
+
+```{r}
+kcse %>% 
+  # 2019 is problematic for both Dadaab and KK
+  filter(!is.na(sex)) %>% 
+  # filter(mg %out% c("P", "U", "X", "Y")) %>%
+  distinct(id, sex, year) %>% 
+  group_by(year, sex) %>% 
+  summarise(count = n()) %>% 
+  rbind(
+    kk_2019_number_candidates %>%
+      group_by(sex) %>%
+      summarise(count = sum(count, na.rm = TRUE)) %>%
+      mutate(year = 2019)
+  ) %>% 
+  group_by(year, sex) %>% 
+  summarise(count = sum(count)) %>% 
+  ggplot(aes(x = year, y = count, fill = sex)) + 
+  geom_col(position = position_dodge()) + 
+  geom_text(aes(label = comma(count)), 
+            position = position_dodge(width = .9), 
+            vjust = -.3) + 
+  scale_fill_manual(values = c("#56B4E9", "#CC79A7")) +
+  scale_y_continuous(labels = comma) + 
+  labs(title = "KCSE Candidates assessed by year in Dadaab, Kakuma and Kalobeyei", 
+       y = "Number of children", 
+       x = "") + 
+  theme(plot.caption = element_text(hjust = .5, size = 8))
+
+
+```
+
+<br>
+
+Overall, there is not a very clear trend when it comes to the mean scores of KCSE candidates of both sexes. Males had their mean scores increase since 2018, but female candidates have had their mean scores decrease. 
+
+However, as will be expanded on further, combining Kakuma, Kalobeyei and Dadaab results for analysis does not always make the most sense. 
+
+<br>
+
+
+
+```{r}
+
+kcse %>% 
+  filter(!is.na(sex)) %>% 
+  group_by(year, sex) %>% 
+  summarise(mean_score = mean(mean_score, na.rm = TRUE), 
+            count = n()) %>% 
+  mutate(score_multiplied = mean_score * count) %>% 
+  rbind(
+    kk_2019_number_candidates %>%
+      left_join(score_convert, by = "grade") %>% 
+      group_by(sex, score) %>%
+      summarise(count = sum(count, na.rm = TRUE)) %>% 
+      mutate(score_multiplied = score * count) %>% 
+      group_by(sex) %>% 
+      summarise(count = sum(count), 
+                score_multiplied = sum(score_multiplied)) %>% 
+      mutate(mean_score = score_multiplied / count) %>% 
+      mutate(year = 2019)
+  ) %>% 
+  group_by(year, sex) %>% 
+  summarise(score_multiplied = sum(score_multiplied), 
+            count = sum(count)) %>% 
+  mutate(mean_score = score_multiplied / count) %>% 
+  ggplot(aes(x = year, y = mean_score, fill = sex)) +
+  geom_col(position = position_dodge()) + 
+  geom_text(aes(label = round(mean_score, digits = 2)), 
+            position = position_dodge(width = .9), 
+            vjust = -.3) + 
+  coord_cartesian(ylim = c(0, 2.8)) + 
+  scale_y_continuous(breaks = seq(0, 2.5, .5)) + 
+  scale_fill_manual(values = c("#56B4E9", "#CC79A7")) + 
+  labs(title = "Mean score by sex and year in Dadaab, Kakuma and Kalobeyei", 
+       y = "Mean score", 
+       x = "", 
+       fill = "")
+
+```
+<br>
+
+```{r}
+summary_flat <- kcse %>% 
+  mutate(area = ifelse(area != "dadaab", "Kakuma_Kalobeyei", "Dadaab")) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(year, area, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  rbind(
+    kk_2019_raw %>%
+      mutate(is_stem = ifelse(subject %in% c("biology", "chemistry", "computer_studies", 
+                                         "general_science", "maths", "physics"),
+                          "STEM", "non-STEM"),
+             area = ifelse(area == "kk", "Kakuma_Kalobeyei", area)) %>%
+      mutate(subtotal = number_candidates * score) %>%
+      group_by(year, subject, area, is_stem) %>%
+      summarise(subtotal = sum(subtotal),
+                count = sum(number_candidates)) %>%
+      mutate(score = subtotal / count) %>% 
+      select(-subtotal, -count)
+  ) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018)
+
+summary_pc <- summary_flat %>% group_by(is_stem) %>% 
+  summarise(increase = round(mean(increase * 100, na.rm = TRUE), digits = 2))
+  
+```
+
+Overall, it does seem like STEM subject scores have increased more than non-STEM ones, between 2018 and 2022. The thick bar in the middle of each box is the median and the upper and lower bounds of each box indicate the 75th and 25th percentiles. 
+
+STEM subjects saw an average of a **`r summary_pc %>% filter(is_stem == "STEM") %>% pull(increase)`%** increase in scores, and non-STEM subjects saw a **`r summary_pc %>% filter(is_stem == "non-STEM") %>% pull(increase)`%** increase. 
+
+<br>
+
+```{r}
+
+summary_flat %>% 
+  ggplot(aes(x =  is_stem, y = increase, colour = is_stem)) + 
+  geom_boxplot(size = 1) +
+  geom_point(size = 2, alpha = .5) +
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  theme(legend.position = "none") +
+  scale_y_continuous(labels = percent, 
+                     breaks = seq(-.5, 2.5, by = .5)) +
+  labs(x = "", 
+       y = "% Change in scores", 
+       title = "Percentage change in STEM and non-STEM scores between 2018 and 2020", 
+       subtitle = "In Dadaab, Kakuma and Kalobeyei")
+
+```
+
+<br>
+
+Looking at individual subjects, Computer Studies and Physics saw the largest increases in scores, whilst Islamic Religious Education, Christian Religious Education and Geography all saw their average scores decline. 
+
+<br>
+
+```{r}
+kcse %>% 
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(subject, is_stem) %>% 
+  mutate(yoy_change = score - lag(score), 
+         pc_change = yoy_change / score, 
+         overall_change = score[year == 2022] - score[year == 2018],
+         pc_overall_change = overall_change / score[year == 2018]) %>% 
+  filter(!is.na(yoy_change)) %>% 
+  summarise(yoy_change = mean(yoy_change), 
+            pc_change = mean(pc_change), 
+            overall_change = mean(overall_change), 
+            pc_overall_change = mean(pc_overall_change)) %>%
+  mutate(subject = str_replace_all(subject, "_", " ")) %>% 
+  ggplot(aes(x = pc_overall_change, 
+             y = fct_reorder(str_to_title(subject), pc_overall_change), 
+             fill = is_stem)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(pc_overall_change, accuracy = 1)), 
+            hjust = "inward") + 
+  scale_x_continuous(labels = percent) + 
+  scale_fill_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  labs(x = "% change between 2018 and 2022", 
+       y = "", 
+       title = "Percentage change in mean subject scores between 2018 and 2022",
+       subtitle = "In Dadaab, Kakuma and Kalobeyei", 
+       fill = "")
+```
+<br>
+
+However, as mentioned, it makes more sense to analyse Dadaab and Kakuma and Kalobeyei separately, given the disparities in their relative performances: 
+
+<br>
+
+```{r}
+summary_flat %>% 
+  ggplot(aes(x =  area, y = increase, colour = area)) + 
+  geom_hline(yintercept = 0, lty = 2, size = 1, alpha = .8, colour = "grey") + 
+  geom_boxplot(size = .7) +
+  geom_point(size = 2, alpha = .5) +
+  scale_colour_manual(values = c("salmon", "blue2")) +
+  scale_y_continuous(labels = percent) +
+  facet_wrap(~ is_stem) +
+  labs(x = "", 
+       y = "% increase in scores", 
+       title = "Changes in scores in Dadaab, Kakuma and Kalobeyei, 2018-2022") + 
+   theme(legend.position = "none", 
+         strip.background = element_rect(fill = "black"), 
+         strip.text = element_text(colour = "white", face = "bold"), 
+         axis.text.x = element_text(size = 10))
+```
+
+<br>
+
+Scores improved more in Dadaab than they did in Kakuma and Kalobeyei. However, whilst STEM subjects made larger improvements in Dadaab, the opposite was true in Kakuma and Kalobeyei, where STEM subject scores declined more than their non-STEM counterparts. Kakuma and Kalobeyei saw decreases in their STEM and non-STEM scores -- note the grey line marking a 0% change in scores. 
+
+
+
+<br><br><br>
+
+
+
+# Dadaab
+
+## Sex
+
+The mean AGPs of both male and female candidates have increased substantially since 2018, though the scores of male candidates both starting higher and ending higher. 
+
+<br>
+
+```{r}
+kcse %>% filter(area == "dadaab" & !is.na(sex)) %>% 
+  filter(agp > 0) %>% 
+  group_by(year, sex) %>% 
+  summarise(mean_agp = mean(agp, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_agp, colour = sex)) + 
+  geom_line(size = 1) + 
+  geom_text(aes(label = round(mean_agp, digits = 2)), 
+            vjust = -.3, hjust = "inward") + 
+  scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
+  facet_wrap(~ sex) + 
+  labs(title = "Improvements in mean AGP across both sexes in Dadaab", 
+       y = "Mean AGP") +
+  theme(legend.position = "none", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8))
+```
+
+
+<br><br><br>
+
+### Distribution of STEM scores by sex
+
+
+The plot below shows the distributions of average STEM score of male and female candidates by year. Of note -- years 2018 and 2020 have markedly lower mean STEM scores across both males and female candidates. These plots show the density, instead of the actual count, so that the results of male and female candidates can be more easily compared. 
+
+In 2018 and 2020, the distribution of scores in Dadaab is quite skewed, with the mean scores for male and female candidates less than 2, or around and E. 
+
+
+The much more rounded distribution of scores in 2021 and 2022 indicate quite a drastic improvement, with both sexes having mean scores close to a D. 
+
+<br>
+
+```{r fig.width=8}
+
+dadaab_mean_stem <- kcse %>% 
+  filter(area == "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  group_by(year, sex) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE))
+
+kcse %>% 
+  filter(area == "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  ggplot(aes(x = score, colour = sex)) + 
+  geom_density(size = .4, alpha = .3, adjust = 3) + 
+  scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
+  geom_vline(data = dadaab_mean_stem, aes(xintercept = mean_stem_score, 
+                                          colour = sex), 
+             lty = 2, size = .5, alpha = .6, show.legend = FALSE) +
+  scale_x_continuous(breaks = seq(0, 12, by = 1)) +
+  facet_wrap(~ year) +  
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        plot.caption = element_text(hjust = .5)) +
+   guides(colour = guide_legend(override.aes = list(shape = 19))) + 
+  labs(x = "Candidate STEM scores", 
+       y = "Density", 
+       title = "Distribution of mean STEM scores by year and sex", 
+       subtitle = "Mean score by sex marked by dotted lines", 
+       colour = "", 
+       caption = "2019 excluded due to small sample size")
+
+  
+```
+
+```{r}
+score_convert %>% 
+  transpose_df() %>% 
+  select(`1`:`12`) %>% 
+  flextable() %>% 
+  set_header_labels(label = "") %>% 
+  delete_part(part = "header") %>% 
+  theme_vanilla() %>% 
+  set_caption("Scores and letter grade equivalents")
+```
+
+<br>
+
+Additionally, whilst male candidates have outperformed female candidates in STEM subjects consistently, the difference in the results of the two sexes starting becoming more prominent in 2021, with the gap widening further in 2022: 
+
+<br> 
+
+```{r}
+kcse %>% 
+  filter(area == "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  group_by(year, sex) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = sex, values_from = mean_stem_score) %>% 
+  rename(Year = year) %>% 
+  mutate(Year = factor(Year)) %>% 
+  mutate_at(vars("Female", "Male"), ~ round(., digits = 3)) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_table_properties(layout = "autofit", width = .4) %>% 
+  set_caption("Mean STEM scores in Dadaab")
+```
+
+<br><br><br>
+
+## Subject
+
+The plot below shows the mean increase in scores between 2018 and 2020 per subject: 
+
+<br>
+
+```{r}
+kcse %>% 
+  filter(area == "dadaab") %>%
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  filter(subject %out% c("biology_for_the_blind", 
+                         "maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(subject, is_stem) %>% 
+  mutate(yoy_change = score - lag(score), 
+         pc_change = yoy_change / score, 
+         overall_change = score[year == 2022] - score[year == 2018],
+         pc_overall_change = overall_change / score[year == 2018]) %>% 
+  filter(!is.na(yoy_change)) %>% 
+  summarise(yoy_change = mean(yoy_change), 
+            pc_change = mean(pc_change), 
+            overall_change = mean(overall_change), 
+            pc_overall_change = mean(pc_overall_change)) %>%
+  mutate(subject = str_replace_all(subject, "_", " ")) %>% 
+  ggplot(aes(x = pc_overall_change, 
+             y = fct_reorder(str_to_title(subject), pc_overall_change), 
+             fill = is_stem)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(pc_overall_change, accuracy = 1)), 
+            hjust = "inward") + 
+  scale_x_continuous(labels = percent) + 
+  scale_fill_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  labs(x = "% change between 2018 and 2022", 
+       y = "", 
+       title = "Percentage change in mean subject scores between 2018 and 2022", 
+       subtitle = "In Dadaab", 
+       fill = "STEM")
+
+```
+
+<br>
+
+And this plot presents a more detailed view of the changes. 
+
+As noted earlier, the increase in scores in Computer Studies, Physics and Business Studies are all quite substantial. 
+
+```{r eval = FALSE}
+dadaab_school_mean_stem <- kcse %>% 
+  filter(area == "dadaab" & !is.na(school) & is_stem == "STEM" & year != 2019) %>%
+  group_by(year, school) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE))
+
+kcse %>% 
+  filter(area == "dadaab" & !is.na(school) & is_stem == "STEM" & year != 2019) %>%
+  ggplot(aes(x = score, colour = school)) + 
+  geom_density(size = .4, alpha = .3, adjust = 3) +
+  scale_colour_viridis_d(option = "turbo") + 
+  # scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
+  geom_vline(data = dadaab_school_mean_stem, aes(xintercept = mean_stem_score, 
+                                          colour = school), 
+             lty = 2, size = .1, alpha = .6, show.legend = FALSE) +
+  scale_x_continuous(breaks = seq(0, 12, by = 1)) +
+  facet_wrap(~ year) +  
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        plot.caption = element_text(hjust = .5)) +
+   guides(colour = guide_legend(override.aes = list(shape = 19))) + 
+  labs(x = "Candidate STEM scores", 
+       y = "Density", 
+       title = "Distribution of mean STEM scores by year and sex", 
+       subtitle = "Mean score by sex marked by dotted lines", 
+       colour = "", 
+       caption = "2019 excluded due to small sample size")
+```
+
+
+
+<br>
+
+
+```{r fig.width=8, fig.height=6}
+kcse %>% 
+  filter(area == "dadaab") %>% 
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  mutate(score_round = round(score)) %>% 
+  left_join(score_convert, 
+            by = c("score_round" = "score")) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  mutate(label = subject, 
+         label = ifelse(year != 2021, "", subject), 
+         subject = str_to_title(subject)) %>% 
+  ggplot(aes(x = year, y = score, colour = is_stem)) + 
+  geom_text_repel(aes(label = grade), size = 3, show.legend = FALSE) + 
+  geom_line(size = 1) +
+  facet_wrap(~ subject) +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10)) + 
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  labs(title = "Average score per subject 2018-2022", 
+       subtitle = "In Dadaab", 
+       x = "", y = "Average score", 
+       colour = "") + 
+  theme(legend.position = "bottom", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), 
+        legend.box.margin = unit(c(-5, 0, 0, 0), "mm")) 
+  
+```
+
+```{r eval=FALSE}
+kcse %>% 
+  filter(area == "dadaab" & school != "NASIB") %>% 
+  group_by(subject, year, school) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  mutate(score_round = round(score)) %>% 
+  left_join(score_convert, 
+            by = c("score_round" = "score")) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  mutate(label = subject, 
+         label = ifelse(year != 2021, "", subject), 
+         subject = str_to_title(subject)) %>% 
+  ggplot(aes(x = year, y = score, colour = school)) + 
+  # geom_text_repel(aes(label = grade), size = 3, show.legend = FALSE) + 
+  geom_line(size = .5) +
+  facet_wrap(~ subject) +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10)) +
+  # scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+  #                     breaks = c("STEM", "non-STEM")) +
+  labs(title = "Average score per subject 2018-2022", 
+       subtitle = "In Dadaab", 
+       x = "", y = "Average score", 
+       colour = "") + 
+  theme(legend.position = "bottom", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), 
+        legend.box.margin = unit(c(-5, 0, 0, 0), "mm")) 
+```
+
+
+<br>
+
+```{r}
+dadaab_t_test <- kcse %>% 
+  filter(area == "dadaab") %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  mutate(is_stem = ifelse(subject %in% c("biology", "chemistry", "computer_studies", 
+                                         "general_science", "maths", "physics"), 
+                          "STEM", "non-STEM")) %>% 
+  group_by(year, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  t.test(increase ~ is_stem, data = ., paired = FALSE) %>% 
+  broom::tidy()
+
+dadaab_flat <- kcse %>% 
+  filter(!is.na(school) & area == "dadaab") %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  
+  group_by(year, school, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) 
+
+dadaab_stem_percentages <- dadaab_flat %>% 
+  group_by(is_stem) %>% 
+  summarise(increase = mean(increase)) %>% 
+  mutate(increase = round(increase * 100, digits = 2))
+
+```
+
+From the charts above, it does seem that the scores of STEM subjects have increased more than non-STEM subjects.  Our hypothesis, then, is that UNICEF-assisted programmes, intervening in STEM education, have had a demonstrable impact on KCSE scores. That is why they are being compared to the increase in scores of non-STEM subjects. Let us first compare the changes in scores between STEM and non-STEM subjects with this boxplot: STEM scores increasing by **`r dadaab_stem_percentages %>% filter(is_stem == "STEM") %>% pull(increase)`%** and non-STEM scores increasing by **`r dadaab_stem_percentages %>% filter(is_stem != "STEM") %>% pull(increase)`%**.
+
+<br>
+
+```{r}
+
+
+dadaab_flat %>% 
+  ggplot(aes(x =  is_stem, y = increase, colour = is_stem)) + 
+  geom_boxplot(size = .7) +
+  geom_point(size = 2, alpha = .3) +
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  scale_y_continuous(labels = percent) +
+  labs(x = "", 
+       y = "# increase in mean scores", 
+       title = "Change in scores in Dadaab, 2018 - 2022", 
+       subtitle = "Boxes show inter-quartile range, with the median marked by the bold line") + 
+  coord_cartesian(ylim = c(-1, 6)) + 
+  theme(legend.position = "none", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold"), 
+        axis.text.x = element_text(face = "bold", size = 8))
+
+```
+<br>
+
+
+However, upon performing a t-test, we note that the p-value of **`r dadaab_t_test %>% pull(p.value) %>% round(digits = 3)`** when comparing the change in scores between STEM and non-STEM subjects between 2018 and 2022. This falls outside of the commonly-used threshold of <=0.05 used for statistical significance. The p-value tells us how likely a set of observations could have occurred by chance. 
+
+The t-statistic, which tells us the size of the effect, is not large at **`r dadaab_t_test %>% pull(statistic) %>% round(digits = 3)`**. This doesn't necessarily rule out UNICEF-supported programmes having an effect on STEM scores. Let us first take a look at the increases in STEM and non-STEM scores at the school level before jumping to conclusions. 
+
+<br><br><br>
+
+## School
+
+<br>
+
+```{r}
+
+kcse %>% 
+  filter(area == "dadaab") %>% 
+  filter(!is.na(class)) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(year, school, sex, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  ggplot(aes(x =  is_stem, y = increase, colour = is_stem)) + 
+  geom_boxplot(size = .7) +
+  geom_point(size = 2, alpha = .3, 
+             show.legend = FALSE) +
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  facet_wrap(~ school) + 
+  scale_y_continuous(labels = percent) +
+  labs(x = "", 
+       y = "% Change in scores", 
+       title = "Change in scores by school in Dadaab, 2018 - 2022", 
+       colour = "") + 
+  coord_cartesian(ylim = c(-1, 6)) + 
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold"))
+
+```
+
+<br>
+
+Scores overall in Dagahaley and Tawakal were largely flat. Though STEM subjects outperformed non-STEM subjects in 5 out of the 6 schools assessed in Dadaab. Notable improvements in all scores were noted In Hagadera, Ifo, Towfiq and Waberi (though non-STEM subjects increased more than STEM subjects in Waberi). Hagadera has also improved the most, with both STEM and non-STEM scores have increased by more than 200% between 2018 and 2020. 
+
+Let us again perform t-tests on the school-level changes in STEM scores: 
+
+* The `Estimate` indicates the difference between STEM and non-STEM subjects. If STEM subjects performed better overall, this number will be negative. The larger the number, the larger the difference between STEM and non-STEM scores. 
+
+* The `T-statistic` is used to determine if there is a significant difference between the mean STEM and non-STEM scores. Larger absolute values indicate greater differences. 
+
+* The `P-value` is the probability of the assumption that UNICEF-supported interventions have had an effect on STEM scores. Lower values indicate that it is more likely that UNICEF-supported interventions have had a demonstrable effect. The commonly-accepted threshold for statistical significance is >=0.05. 
+
+<br>
+
+```{r}
+kcse %>% 
+  filter(area == "dadaab") %>% 
+  filter(!is.na(school)) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(year, school, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  group_by(school) %>% 
+  nest() %>% 
+  mutate(t_test = map(data, ~ t.test(.x$increase ~ .x$is_stem, paired = FALSE)), 
+         res = map(t_test, broom::tidy)) %>% 
+  unnest(res) %>%  
+  select(school, estimate, statistic, p.value) %>% 
+  mutate_if(is.numeric, ~ round(., digits = 3)) %>% 
+  arrange(estimate) %>% 
+  rename(School = school, 
+         Estimate = estimate, 
+         `T-statistic` = statistic, 
+         `P-value` = p.value) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_caption("T-test results of score increases in STEM and non-STEM scores by school") %>% 
+  set_table_properties(width = .6, layout = "autofit")
+```
+
+<br>
+
+Neither the results at the area-level (Dadaab) or the school level are statistically significant. This does not necessarily rule out UNICEF-supported programmes having an effect on STEM scores -- the number of schools is fairly small, and one observation here is the mean score per subject per school.  
+
+Potentially, there could be a Dadaab-wide effect, that affects a some teachers and some students across each of the schools. Ultimately, what is needed is needed is to track students' performance year-on-year. That level of granularity would likely yield less ambiguous results. 
+
+That there was some effect is not in dispute -- the programme has concrete outputs and has been implemented and associated materials distributed. But at this moment, there is no conclusive effect for UNICEF-support interventions having had a demonstrable effect on STEM scores. That is to say, whilst STEM scores have improved more so that non-STEM scores in Dadaab, we cannot attribute this to the programme in question.  
+
+In particular, if we were to note that plot below, there was a large jump in STEM and non-STEM scores between 2020 and 2021 -- this would indicate that the largest increase in scores were due to a factor common to all subjects.  
+
+<br>
+
+
+```{r}
+kcse %>% 
+  filter(area == "dadaab") %>%
+  group_by(is_stem, year) %>% 
+  summarise(mean_score = mean(score, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_score, colour = is_stem)) + 
+  geom_line(size = 1) + 
+  geom_text(aes(label = round(mean_score, digits = 2)), 
+            vjust = -.3, 
+            hjust = "inward", 
+            show.legend = FALSE) + 
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  facet_wrap(~ is_stem) + 
+  labs(title = "Improvements in mean scores in STEM and non-STEM subjects in Dadaab", 
+       colour = "") + 
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8))
+ 
+```
+
+<br>
+
+It would be important to understand what happened between 2020 and 2021 -- even if it was due to COVID, the pandemic affected students in different manners. Additional research should also be directed at understanding why STEM subjects performed so much better in Hagadera and Towfiq. 
+
+
+
+<br>
+
+```{r}
+kcse %>% 
+  filter(area == "dadaab" & !is.na(school) & school != "NASIB") %>%
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(year, school, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = score, colour = is_stem)) + 
+  geom_point(size = 1, 
+             show.legend = FALSE) + 
+  geom_line(size = 1) + 
+  geom_text_repel(aes(label = round(score, digits = 2)), 
+                  size = 2.5, 
+                  show.legend = FALSE) +
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  facet_wrap(~ school) + 
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold")) + 
+  labs(title = "STEM and non-STEM scores over time in Dadaab, 2018-2022", 
+       x = "", 
+       y = "Mean score", 
+       colour = "") + 
+  theme(axis.text.x = element_text(angle = 60, 
+                                   vjust = .5))
+
+```
+
+
+
+
+
+<br><br><br>
+
+
+# Kakuma and Kalobeyei
+
+Results in Kakuma and Kalobeyei are quite different from Dadaab. In Kakuma and Kalobeyei, both STEM and non-STEM subjects seemed to have decreased as a whole.
+
+The range of subjects available in each area is also different: Computer Studies definitely contributed to the higher averages in Dadaab. 
+
+<br>
+
+```{r}
+kcse %>% 
+  mutate(area = ifelse(area != "dadaab", "Kakuma & Kalobeyei", "Dadaab")) %>% 
+  group_by(subject, year, is_stem, area) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  filter(subject %out% c("biology_for_the_blind", 
+                         "maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(subject, is_stem, area) %>% 
+  mutate(yoy_change = score - lag(score), 
+         pc_change = yoy_change / score, 
+         overall_change = score[year == 2022] - score[year == 2018],
+         pc_overall_change = overall_change / score[year == 2018]) %>% 
+  filter(!is.na(yoy_change)) %>% 
+  summarise(yoy_change = mean(yoy_change), 
+            pc_change = mean(pc_change), 
+            overall_change = mean(overall_change), 
+            pc_overall_change = mean(pc_overall_change)) %>%
+  mutate(subject = str_replace_all(subject, "_", " ")) %>% 
+  ggplot(aes(x = pc_overall_change, 
+             y = fct_reorder(str_to_title(subject), pc_overall_change), 
+             fill = is_stem)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(pc_overall_change, accuracy = 1)), 
+            hjust = "inward") + 
+  scale_x_continuous(labels = percent) + 
+  scale_fill_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  facet_wrap(~ area) + 
+  labs(x = "% change between 2018 and 2022", 
+       y = "", 
+       title = "% change in mean subject scores between 2018 and 2022", 
+       subtitle = "In Dadaab", 
+       fill = "") + 
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold"))
+```
+
+<br>
+
+## Sex
+
+The AGPs of both sexes in Kakuma and Kalobeyei have declined between 2018 and 2022, with the scores of female candidates experiencing a more drastic decline. 
+
+<br>
+
+```{r}
+kcse %>% filter(area != "dadaab" & !is.na(sex)) %>% 
+  filter(agp > 0) %>% 
+  group_by(year, sex) %>% 
+  summarise(mean_agp = mean(agp, na.rm = TRUE)) %>% 
+  ggplot(aes(x = year, y = mean_agp, colour = sex)) + 
+  geom_line(size = 1) + 
+  geom_text(aes(label = round(mean_agp, digits = 2)), 
+            vjust = "inward", hjust = "inward", 
+            show.legend = FALSE) + 
+  scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
+  facet_wrap(~ sex) + 
+  labs(title = "Improvements in mean AGP across both sexes in Kakuma and Kalobeyei", 
+       colour = "", 
+       y = "Mean AGP") +
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8))
+```
+
+<br><br><br>
+
+### Distribution of STEM scores by sex
+
+
+The plot below shows the distributions of average STEM score of male and female candidates by year. Surprisingly, the distributions are almost the opposite from Dadaab's, showing an overall retreat from their 2018 and 2019 values. 
+
+<br>
+
+```{r fig.width=8}
+
+kk_mean_stem <- kcse %>% 
+  filter(area != "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  group_by(year, sex) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE))
+
+kcse %>% 
+  filter(area != "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  ggplot(aes(x = score, colour = sex)) + 
+  geom_density(size = .4, alpha = .3, adjust = 3) + 
+  scale_colour_manual(values = c("#56B4E9", "#CC79A7")) +
+  geom_vline(data = kk_mean_stem, aes(xintercept = mean_stem_score, 
+                                          colour = sex), 
+             lty = 2, size = .1, alpha = .8, show.legend = FALSE) +
+  scale_x_continuous(breaks = seq(0, 12, by = 1)) +
+  facet_wrap(~ year) +  
+  theme(strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        plot.caption = element_text(hjust = .5)) +
+   guides(colour = guide_legend(override.aes = list(shape = 19))) + 
+  labs(x = "Candidate STEM scores", 
+       y = "Density", 
+       title = "Distribution of mean STEM scores by year and sex in Kakuma and Kalobeyei", 
+       subtitle = "Mean score by sex marked by dotted lines", 
+       colour = "", 
+       caption = "2019 excluded due lack of individual student results")
+
+  
+```
+
+```{r}
+score_convert %>% 
+  transpose_df() %>% 
+  select(`1`:`12`) %>% 
+  flextable() %>% 
+  set_header_labels(label = "") %>% 
+  delete_part(part = "header") %>% 
+  theme_vanilla() %>% 
+  set_caption("Scores and letter grade equivalents")
+```
+
+<br>
+
+Female candidates outperformed male candidates in all years except 2022, when they experienced a very precipitous drop in scores. It would be important to understand how to arrest the decline. 
+
+
+<br> 
+
+```{r}
+kcse %>% 
+  filter(area != "dadaab" & !is.na(sex) & is_stem == "STEM" & year != 2019) %>%
+  group_by(year, sex) %>% 
+  summarise(mean_stem_score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = sex, values_from = mean_stem_score) %>% 
+  rename(Year = year) %>% 
+  mutate(Year = factor(Year)) %>% 
+  mutate_at(vars("Female", "Male"), ~ round(., digits = 3)) %>% 
+  flextable() %>% 
+  theme_zebra() %>% 
+  set_table_properties(layout = "autofit", width = .4) %>% 
+  set_caption("Mean STEM scores in Kakuma and Kalobeyei")
+```
+
+
+<br><br><br>
+
+
+## Subject
+
+The plot below shows the mean increase in scores between 2018 and 2020 per subject: 
+
+<br>
+
+```{r}
+kcse %>% 
+  filter(area != "dadaab") %>%
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  filter(subject %out% c("biology_for_the_blind", 
+                         "maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(subject, is_stem) %>% 
+  mutate(yoy_change = score - lag(score), 
+         pc_change = yoy_change / score, 
+         overall_change = score[year == 2022] - score[year == 2018],
+         pc_overall_change = overall_change / score[year == 2018]) %>% 
+  filter(!is.na(yoy_change)) %>% 
+  summarise(yoy_change = mean(yoy_change), 
+            pc_change = mean(pc_change), 
+            overall_change = mean(overall_change), 
+            pc_overall_change = mean(pc_overall_change)) %>%
+  mutate(subject = str_replace_all(subject, "_", " ")) %>% 
+  ggplot(aes(x = pc_overall_change, 
+             y = fct_reorder(str_to_title(subject), pc_overall_change), 
+             fill = is_stem)) + 
+  geom_col() + 
+  geom_text(aes(label = percent(pc_overall_change, accuracy = 1)), 
+            hjust = "inward") + 
+  scale_x_continuous(labels = percent) + 
+  scale_fill_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  labs(x = "% change between 2018 and 2022", 
+       y = "", 
+       title = "% change in mean subject scores between 2018 and 2022", 
+       subtitle = "In Kakuma and Kalobeyei", 
+       fill = "")
+
+```
+
+<br>
+
+Only Agriculture and Physics saw their scores increase between 2018 and 2022, with the rest of the subject declining to various degrees. 
+
+And this plot presents a more detailed view of the changes in scores.  
+
+<br>
+
+```{r fig.width=8, fig.height=8}
+kcse %>% 
+  filter(area != "dadaab") %>% 
+  group_by(subject, year, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  rbind(
+    kk_2019_raw %>%
+      mutate(is_stem = ifelse(subject %in% c("biology", "chemistry", "computer_studies", 
+                                         "general_science", "maths", "physics"), 
+                          "STEM", "non-STEM")) %>%
+      mutate(subtotal = score * number_candidates) %>%
+      group_by(subject, year, is_stem) %>%
+      summarise(number_candidates = sum(number_candidates), 
+            total = sum(subtotal)) %>%
+      mutate(score = total / number_candidates) %>%
+      select(subject, year, is_stem, score)
+  ) %>% 
+  mutate(score_round = round(score)) %>% 
+  left_join(score_convert, 
+            by = c("score_round" = "score")) %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  mutate(subject = str_to_title(subject)) %>% 
+  ggplot(aes(x = year, y = score, colour = is_stem)) + 
+  geom_text_repel(aes(label = grade), size = 3, show.legend = FALSE) + 
+  geom_line(size = 1) +
+  facet_wrap(~ subject) +
+  scale_y_continuous(breaks = c(2, 4, 6, 8, 10)) + 
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  labs(title = "Average score per subject 2018-2022", 
+       subtitle = "In Kakuma and Kalobeyei", 
+       x = "", y = "Average score", 
+       colour = "") + 
+  theme(legend.position = "bottom", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold", size = 8), 
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1), 
+        legend.box.margin = unit(c(-5, 0, 0, 0), "mm")) 
+  
+```
+
+<br>
+
+Declines are most notable in Islamic Religious Education, Business Studies, Arabic and Chemistry. 
+
+```{r}
+kk_flat <- kcse %>% 
+  filter(area != "dadaab") %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  group_by(year, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) 
+
+kk_stem_percentages <- kk_flat %>% 
+  group_by(is_stem) %>% 
+  summarise(increase = mean(increase)) %>% 
+  mutate(increase = round(increase * 100, digits = 2))
+```
+
+
+From the plots above and the boxplot below, it seems that contrary to the intended outcomes of the programme, STEM scores in Kakuma and Kalobeyei have declined more than non-STEM subjects have, with STEM subject scores changes by **`r kk_stem_percentages %>% filter(is_stem == "STEM") %>% pull(increase)`%** and non-STEM subjects changing by **`r kk_stem_percentages %>% filter(is_stem != "STEM") %>% pull(increase)`%**. 
+
+<br>
+
+```{r}
+
+kk_flat %>% 
+  ggplot(aes(x =  is_stem, y = increase, colour = is_stem)) + 
+  geom_hline(yintercept = 0, lty = 2, size = 1, alpha = .8, colour = "grey") + 
+  geom_boxplot(size = .7) +
+  geom_point(size = 2, alpha = .3) +
+  scale_colour_manual(values = c("darkgoldenrod3", "darkslategray4"), 
+                      breaks = c("STEM", "non-STEM")) +
+  scale_y_continuous(labels = percent) +
+  labs(x = "", 
+       y = "Increase in scores", 
+       title = "Change in scores in Kakuma and Kalobeyei, 2018 - 2022") + 
+  coord_cartesian(ylim = c(-.5, .4)) + 
+  theme(legend.position = "none", 
+        strip.background = element_rect(fill = "black"), 
+        strip.text = element_text(face = "bold"), 
+        axis.text.x = element_text(face = "bold", size = 8))
+
+```
+
+<br> 
+
+
+```{r}
+kk_t_test <- kcse %>% 
+  filter(area != "dadaab") %>% 
+  filter(subject %out% c("maths_b", 
+                         "general_science", 
+                         "kenyan_sign_language")) %>% 
+  mutate(is_stem = ifelse(subject %in% c("biology", "chemistry", "computer_studies", 
+                                         "general_science", "maths", "physics"), 
+                          "STEM", "non-STEM")) %>% 
+  group_by(year, subject, is_stem) %>% 
+  summarise(score = mean(score, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = year, values_from = score, names_prefix = "year_") %>% 
+  filter(!is.na(year_2018) & !is.na(year_2022) & year_2018 != 0) %>%
+  mutate(increase = (year_2022 - year_2018) / year_2018) %>% 
+  t.test(increase ~ is_stem, data = ., paired = FALSE) %>% 
+  broom::tidy()
+
+```
+
+
+Upon performing a t-test, we note that the p-value of **`r kk_t_test %>% pull(p.value) %>% round(digits = 3)`** when comparing the change in scores between STEM and non-STEM subjects between 2018 and 2022. This falls far outside of the commonly-used threshold of <=0.05 used for statistical significance. 
+
+The t-statistic, which tells us the size of the effect, is very small at **`r kk_t_test %>% pull(statistic) %>% round(digits = 3)`**. 
+
+We may conclude that, in Kakuma and Kalobeyei, UNICEF-supported interventions have not led to STEM scores increasing more than non-STEM ones. 
+
+Furthermore, due to the data that was available for Kakuma and Kalobeyei, school-level analysis was not possible: 2018 data was missing the schools each candidate attended (in addition the area, not even allowing an analysis between Kakuma and Kalobeyei) and 2019 data was missing the individual results of candidates, meaning certain analyses, especially those related to the sex of the candidates was not possible. 
+
+

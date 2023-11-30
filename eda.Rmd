@@ -100,6 +100,19 @@ score_convert<- tribble(~grade, ~score,
 ```
 
 
+```{r eval=FALSE}
+kcse %>% 
+  select(id,
+         sex,  
+         school, 
+         subject,
+         subject_group, 
+         grade, 
+         year, 
+         area) %>% 
+  write_csv("./data/example_template_anonymised.csv")
+
+```
 
 
 
